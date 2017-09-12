@@ -24,6 +24,7 @@ limitations under the License.
 #include "tensorflow/core/kernels/argmax_op.h"
 
 #include <memory>
+#include <limits>
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 #include "tensorflow/core/framework/op_kernel.h"
 #include "tensorflow/core/framework/register_types.h"
@@ -116,6 +117,68 @@ class ArgMinOp : public ArgOp<Device, T, functor::ArgMin<Device, T> > {
       : ArgOp<Device, T, functor::ArgMin<Device, T> >(context) {}
 };
 
+/*
+ * (pin) ArgMax2DOp
+ */
+template <typename T>
+struct ArgMax2DFunctor<CPUDevice, T>{ 
+  void operator() (const CPUDevice& d, 
+                   T* input, 
+                   int* output,
+                   int lowest,
+                   int bsize,
+                   int hsize) { 
+    LOG(FATAL) << "Not Implemented.";
+  }
+};
+
+
+template <typename Device, typename T>
+class ArgMax2DOp : public OpKernel {
+ public : 
+  explicit ArgMax2DOp(OpKernelConstruction* context) : OpKernel(context) { } 
+
+  void Compute(OpKernelContext* context) override { 
+    const Tensor& input = context->input(0);
+    const int input_dims = input.dims();
+    OP_REQUIRES(context, input_dims == 2,
+                errors:InvalidArgument("Expected dimension 2, but got ", input_dims));
+    int axis = 1;
+    OP_REQUIRES(
+        context, input.dim_size(axis) > 0,
+        errors::InvalidArgument("Reduction axis ", axis, " is empty in shape ",
+                                input.shape().DebugString()));
+    TensorShape output_shape;
+    const TensorShape& input_shape = input.shape();
+    output_shape.AddDim(input_shape.dim_size(0)); // assume first dim is batch dim.
+    Tensor* output = nullptr;
+    OP_REQUIRES_OK(context, context->allocate_output(0, output_shape, &output));
+
+    // compute
+    int bsize = input_shape.dim_size(0);
+    int hsize = input_shape.dim_size(1);
+    ArgMax2DFunctor<Device, T>()(
+      context->engine_device<Device>(),
+      input.flat<T>().data(),
+      output->flat<int>().data(),
+      std::numeric_limits<int>::min(),
+      bsize,
+      hsize);
+    }
+  }
+};
+
+#define REGISTER_ARGMAX2D_CPU(type) \
+  REGISTER_KERNEL_BUILDER(Name("ArgMax2D") \
+                          .Device(DEVICE_CPU) \
+                          .TypeConstraint<type>("T"), \
+                        ArgMax2DOp<CPUDevice, type>);
+
+
+
+
+
+
 #define REGISTER_ARGMAX(type)                            \
   REGISTER_KERNEL_BUILDER(Name("ArgMax")                 \
                               .Device(DEVICE_CPU)        \
@@ -165,6 +228,16 @@ TF_CALL_GPU_NUMBER_TYPES(DECLARE_GPU_CLASS);
 }  // namespace functor
 
 // Registration of the GPU implementations.
+// (pin) 
+#define REGISTER_ARGMAX2D_GPU(type) \
+  REGISTER_KERNEL_BUILDER(Name("ArgMax2D") \
+                          .Device(DEVICE_GPU) \
+                          .TypeConstraint<type>("T"), \
+                        ArgMax2DOp<GPUDevice, type>);
+TF_CALL_GPU_NUMBER_TYPES(REGISTER_ARGMAX2D_GPU);
+#undef REGISTER_ARGMAX2D_GPU
+
+
 #define REGISTER_ARGMAX_GPU(type)                            \
   REGISTER_KERNEL_BUILDER(Name("ArgMax")                     \
                               .Device(DEVICE_GPU)            \

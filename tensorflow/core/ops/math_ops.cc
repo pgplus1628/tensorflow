@@ -1260,6 +1260,24 @@ dimension: int32, 0 <= dimension < rank(input).  Describes which dimension
   of the input Tensor to reduce across. For vectors, use dimension = 0.
 )doc");
 
+/*
+ * (pin) register op for ArgMax2D
+ */
+REGISTER_OP("ArgMax2D")
+    .Input("input: T")
+    .Input("dimension: Tidx")
+    .Output("output: int64")
+    .Attr("T: numbertype")
+    .Attr("Tidx: {int32, int64} = DT_INT32")
+    .SetShapeFn(ArgOpShape)
+    .Doc(R"doc(
+Returns the index with the largest value across dimensions of a tensor.
+
+dimension: int32, 0 <= dimension < rank(input).  Describes which dimension
+  of the input Tensor to reduce across. For vectors, use dimension = 0.
+)doc");
+
+
 REGISTER_OP("ArgMin")
     .Input("input: T")
     .Input("dimension: Tidx")
