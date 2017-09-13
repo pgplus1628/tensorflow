@@ -117,20 +117,23 @@ class ArgMinOp : public ArgOp<Device, T, functor::ArgMin<Device, T> > {
       : ArgOp<Device, T, functor::ArgMin<Device, T> >(context) {}
 };
 
+namespace functor { 
 /*
  * (pin) ArgMax2DOp
  */
 template <typename T>
 struct ArgMax2DFunctor<CPUDevice, T>{ 
   void operator() (const CPUDevice& d, 
-                   T* input, 
+                   const T* input, 
                    int* output,
-                   int lowest,
+                   T lowest,
                    int bsize,
                    int hsize) { 
     LOG(FATAL) << "Not Implemented.";
   }
 };
+
+} // namespace functor
 
 
 template <typename Device, typename T>
@@ -142,7 +145,7 @@ class ArgMax2DOp : public OpKernel {
     const Tensor& input = context->input(0);
     const int input_dims = input.dims();
     OP_REQUIRES(context, input_dims == 2,
-                errors:InvalidArgument("Expected dimension 2, but got ", input_dims));
+                errors::InvalidArgument("Expected dimension 2, but got ", input_dims));
     int axis = 1;
     OP_REQUIRES(
         context, input.dim_size(axis) > 0,
@@ -157,14 +160,13 @@ class ArgMax2DOp : public OpKernel {
     // compute
     int bsize = input_shape.dim_size(0);
     int hsize = input_shape.dim_size(1);
-    ArgMax2DFunctor<Device, T>()(
-      context->engine_device<Device>(),
+    functor::ArgMax2DFunctor<Device, T>()(
+      context->eigen_device<Device>(),
       input.flat<T>().data(),
       output->flat<int>().data(),
-      std::numeric_limits<int>::min(),
+      std::numeric_limits<T>::min(),
       bsize,
       hsize);
-    }
   }
 };
 
@@ -174,6 +176,7 @@ class ArgMax2DOp : public OpKernel {
                           .TypeConstraint<type>("T"), \
                         ArgMax2DOp<CPUDevice, type>);
 
+TF_CALL_REAL_NUMBER_TYPES(REGISTER_ARGMAX2D_CPU);
 
 
 
@@ -232,7 +235,8 @@ TF_CALL_GPU_NUMBER_TYPES(DECLARE_GPU_CLASS);
 #define REGISTER_ARGMAX2D_GPU(type) \
   REGISTER_KERNEL_BUILDER(Name("ArgMax2D") \
                           .Device(DEVICE_GPU) \
-                          .TypeConstraint<type>("T"), \
+                          .TypeConstraint<type>("T") \
+                          .TypeConstraint<int32>("Tidx"), \
                         ArgMax2DOp<GPUDevice, type>);
 TF_CALL_GPU_NUMBER_TYPES(REGISTER_ARGMAX2D_GPU);
 #undef REGISTER_ARGMAX2D_GPU

@@ -280,7 +280,7 @@ new_http_archive(
 
 http_file(
   name = "numericjs_numeric_min_js",
-  url = "https://cdnjs.cloudflare.com/ajax/libs/numeric/1.2.6/numeric.min.js",
+  url = "http://cdnjs.cloudflare.com/ajax/libs/numeric/1.2.6/numeric.min.js",
 )
 
 new_http_archive(

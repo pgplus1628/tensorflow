@@ -90,23 +90,26 @@ __global__ void argmax2d_kernel(TD* data, TI* index_out, TD lowest, int bsize, i
 }
 
 // (pin) define GPU implementation that launch CUDA kernel.
+namespace functor { 
 template <typename T>
-struct ArgMax2DFunctor<GPUDevice, T> { 
+struct ArgMax2DFunctor<GPUDevice, T>{ 
 
-  void operator() (const GPUDevice &d, T* in, int* out, int lowest, int bsize, int hsize) { 
+  void operator() (const GPUDevice &d, const T* in, int* out, T lowest, int bsize, int hsize) { 
     // launch the CUDA kernel
      int numBlocks = bsize;
      int threadsPerBlock = 512;
      size_t dev_sm_bytes = threadsPerBlock * (sizeof(T) + sizeof(int));
-     argmax2d_kernel<<<numBlocks, threadsPerBlock, dev_sm_bytes, d.stream()>>>(in, out,
+     argmax2d_kernel<T, int> <<<numBlocks, threadsPerBlock, dev_sm_bytes, d.stream()>>>(const_cast<T*>(in), out,
                  lowest, bsize, hsize);
   }
-}:
+};
 
 #define DEFINE_ARGMAX2D_GPU_SPEC(T)                       \
-  template struct functor::ArgMax2D<GPUDevice, T>;
+  template struct functor::ArgMax2DFunctor<GPUDevice, T>;
 
 TF_CALL_GPU_NUMBER_TYPES(DEFINE_ARGMAX2D_GPU_SPEC);
+
+}// namespace functor
 
 }  // end namespace tensorflow
 

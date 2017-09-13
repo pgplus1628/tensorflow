@@ -1244,6 +1244,21 @@ Status ArgOpShape(shape_inference::InferenceContext* c) {
   return Status::OK();
 }
 
+
+// (pin) Shape Fn for ArgMax2D
+Status ArgMax2DOpShape(shape_inference::InferenceContext* c) {
+
+  ShapeHandle input_shape = c->input(0);
+  std::vector<DimensionHandle> dims;
+  dims.emplace_back(c->Dim(input_shape, 0));
+  c->set_output(0, c->MakeShape(dims));
+
+  return Status::OK();
+}
+
+
+
+
 }  // namespace
 
 REGISTER_OP("ArgMax")
@@ -1265,16 +1280,13 @@ dimension: int32, 0 <= dimension < rank(input).  Describes which dimension
  */
 REGISTER_OP("ArgMax2D")
     .Input("input: T")
-    .Input("dimension: Tidx")
-    .Output("output: int64")
+    .Output("output: Tidx")
     .Attr("T: numbertype")
-    .Attr("Tidx: {int32, int64} = DT_INT32")
-    .SetShapeFn(ArgOpShape)
+    .Attr("Tidx: {int32} = DT_INT32")
+    .SetShapeFn(ArgMax2DOpShape)
     .Doc(R"doc(
 Returns the index with the largest value across dimensions of a tensor.
 
-dimension: int32, 0 <= dimension < rank(input).  Describes which dimension
-  of the input Tensor to reduce across. For vectors, use dimension = 0.
 )doc");
 
 

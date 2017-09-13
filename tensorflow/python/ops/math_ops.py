@@ -127,6 +127,7 @@ See the @{$python/math_ops} guide.
 @@sparse_segment_sqrt_n
 @@argmin
 @@argmax
+@@argmax2d
 @@setdiff1d
 @@where
 @@unique
@@ -181,6 +182,18 @@ def argmax(input, axis=None, name=None, dimension=None):
 argmax.__doc__ = (gen_math_ops.arg_max.__doc__.replace("dimensions",
                                                        "axes").replace(
                                                            "dimension", "axis"))
+
+
+# (pin)
+# pylint: disable=redefined-builtin
+# TODO(aselle): deprecate arg_max
+def argmax2d(input, name=None):
+  return gen_math_ops.arg_max2d(input, name)
+
+
+argmax2d.__doc__ = (gen_math_ops.arg_max2d.__doc__)
+
+
 
 
 # TODO(aselle:deprecate arg_min)

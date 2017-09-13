@@ -48,9 +48,9 @@ struct ArgMax {
 template <typename Device, typename T>
 struct ArgMax2DFunctor { 
   void operator() (const Device& d, 
-                   T* input,
+                   const T* input,
                    int* output,
-                   TIN lowest,
+                   T lowest,
                    int bsize,
                    int hsize);
 };
