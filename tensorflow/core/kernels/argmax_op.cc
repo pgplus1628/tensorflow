@@ -25,6 +25,7 @@ limitations under the License.
 
 #include <memory>
 #include <limits>
+#include <type_traits>
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 #include "tensorflow/core/framework/op_kernel.h"
 #include "tensorflow/core/framework/register_types.h"
@@ -157,6 +158,16 @@ class ArgMax2DOp : public OpKernel {
     Tensor* output = nullptr;
     OP_REQUIRES_OK(context, context->allocate_output(0, output_shape, &output));
 
+    /*
+    if (std::is_same<Device, GPUDevice>::value) { 
+      LOG(INFO) << " FUCK It IS GPU !!! FUCK YOU .";
+    } else if (std::is_same<Device, CPUDevice>::value) { 
+      LOG(INFO) << " FUCK !!!!!!!!!!!! CPU .";
+    } else { 
+      LOG(FATAL) << " FUCK NON!";
+    }
+    */
+
     // compute
     int bsize = input_shape.dim_size(0);
     int hsize = input_shape.dim_size(1);
@@ -228,6 +239,21 @@ TF_CALL_GPU_NUMBER_TYPES(DECLARE_GPU_CLASS);
 #undef DECLARE_GPU_SPECS
 #undef DECLARE_GPU_CLASS
 
+// (pin)  forward declare gpu functor
+#define DECLARE_ARGMAX2D_FUNCTOR_GPU_SPEC(T)        \
+  template <>                                       \
+  void ArgMax2DFunctor<GPUDevice, T>::operator()    \
+    (const GPUDevice &d, const T* in, int* out, T lowest, int bsize, int hsize) ;
+
+  TF_CALL_GPU_NUMBER_TYPES(DECLARE_ARGMAX2D_FUNCTOR_GPU_SPEC);
+
+  #define DECLARE_ARGMAX2D_FUNCTOR_GPU_CLASS(T) \
+    extern template struct ArgMax2DFunctor<GPUDevice, T>;
+  
+    TF_CALL_GPU_NUMBER_TYPES(DECLARE_ARGMAX2D_FUNCTOR_GPU_CLASS);
+  #undef DECLARE_ARGMAX2D_FUNCTOR_GPU_SPEC
+#undef DECLARE_ARGMAX2D_FUNCTOR_GPU_CLASS
+
 }  // namespace functor
 
 // Registration of the GPU implementations.
@@ -235,8 +261,7 @@ TF_CALL_GPU_NUMBER_TYPES(DECLARE_GPU_CLASS);
 #define REGISTER_ARGMAX2D_GPU(type) \
   REGISTER_KERNEL_BUILDER(Name("ArgMax2D") \
                           .Device(DEVICE_GPU) \
-                          .TypeConstraint<type>("T") \
-                          .TypeConstraint<int32>("Tidx"), \
+                          .TypeConstraint<type>("T"), \
                         ArgMax2DOp<GPUDevice, type>);
 TF_CALL_GPU_NUMBER_TYPES(REGISTER_ARGMAX2D_GPU);
 #undef REGISTER_ARGMAX2D_GPU

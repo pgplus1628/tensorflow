@@ -105,7 +105,7 @@ struct ArgMax2DFunctor<GPUDevice, T>{
 };
 
 #define DEFINE_ARGMAX2D_GPU_SPEC(T)                       \
-  template struct functor::ArgMax2DFunctor<GPUDevice, T>;
+  template struct ArgMax2DFunctor<GPUDevice, T>;
 
 TF_CALL_GPU_NUMBER_TYPES(DEFINE_ARGMAX2D_GPU_SPEC);
 
