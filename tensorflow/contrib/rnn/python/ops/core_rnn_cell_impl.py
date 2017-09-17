@@ -28,6 +28,7 @@ import numbers
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import tensor_shape
 from tensorflow.python.framework import tensor_util
+from tensorflow.python.framework import dtypes #(pin)
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import clip_ops
 from tensorflow.python.ops import embedding_ops
@@ -501,6 +502,54 @@ class OutputProjectionWrapper(RNNCell):
                         reuse=self._reuse):
       projected = _linear(output, self._output_size, True)
     return projected, res_state
+
+
+class OutputArgMaxWrapper(RNNCell):
+  """Operator adding an output argmax 
+  """
+
+  def __init__(self, cell,reuse=None):
+    """Create a cell with output arg max
+
+    Args:
+      cell: an RNNCell, a argmax to output_size is added to it.
+      reuse: (optional) Python boolean describing whether to reuse variables
+        in an existing scope.  If not `True`, and the existing scope already has
+        the given variables, an error is raised.
+
+    
+      after argmax, it will return a world id.
+    Raises:
+      TypeError: if cell is not an RNNCell.
+    """
+    if not isinstance(cell, RNNCell):
+      raise TypeError("The parameter cell is not RNNCell.")
+    self._cell = cell
+    self._reuse = reuse
+
+  @property
+  def state_size(self):
+    return self._cell.state_size
+
+  @property
+  def output_size(self):
+    return 1
+
+  def zero_state(self, batch_size, dtype):
+    with ops.name_scope(type(self).__name__ + "ZeroState", values=[batch_size]):
+      return self._cell.zero_state(batch_size, dtype)
+
+  def __call__(self, inputs, state, scope=None):
+    """Run the cell and output argmax on inputs, starting from state."""
+    output, res_state = self._cell(inputs, state)
+    # Default scope: "OutputProjectionWrapper"
+    with _checked_scope(self, scope or "output_argmax_wrapper",
+                        reuse=self._reuse):
+      out_symbol = math_ops.argmax(output, 1) # (pin) TODO use argmax2d
+      out_symbol = math_ops.cast(out_symbol, dtype=dtypes.float32) # (pin) this is a hack
+      out_symbol = array_ops.expand_dims(out_symbol, 1)
+    return out_symbol, res_state
+
 
 
 class InputProjectionWrapper(RNNCell):

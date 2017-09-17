@@ -37,6 +37,7 @@
 @@EmbeddingWrapper
 @@InputProjectionWrapper
 @@OutputProjectionWrapper
+@@OutputArgMaxWrapper
 @@DeviceWrapper
 @@ResidualWrapper
 """
