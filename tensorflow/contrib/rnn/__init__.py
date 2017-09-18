@@ -27,8 +27,10 @@ See @{$python/contrib.rnn} guide.
 @@LSTMBlockWrapper
 @@DropoutWrapper
 @@EmbeddingWrapper
+@@GPUEmbeddingWrapper
 @@InputProjectionWrapper
 @@OutputProjectionWrapper
+@@OutputArgMaxWrapper
 @@DeviceWrapper
 @@ResidualWrapper
 @@LSTMBlockCell
@@ -66,12 +68,14 @@ from tensorflow.contrib.rnn.python.ops.core_rnn_cell import BasicRNNCell
 from tensorflow.contrib.rnn.python.ops.core_rnn_cell import DeviceWrapper
 from tensorflow.contrib.rnn.python.ops.core_rnn_cell import DropoutWrapper
 from tensorflow.contrib.rnn.python.ops.core_rnn_cell import EmbeddingWrapper
+from tensorflow.contrib.rnn.python.ops.core_rnn_cell import GPUEmbeddingWrapper
 from tensorflow.contrib.rnn.python.ops.core_rnn_cell import GRUCell
 from tensorflow.contrib.rnn.python.ops.core_rnn_cell import InputProjectionWrapper
 from tensorflow.contrib.rnn.python.ops.core_rnn_cell import LSTMCell
 from tensorflow.contrib.rnn.python.ops.core_rnn_cell import LSTMStateTuple
 from tensorflow.contrib.rnn.python.ops.core_rnn_cell import MultiRNNCell
 from tensorflow.contrib.rnn.python.ops.core_rnn_cell import OutputProjectionWrapper
+from tensorflow.contrib.rnn.python.ops.core_rnn_cell import OutputArgMaxWrapper
 from tensorflow.contrib.rnn.python.ops.core_rnn_cell import ResidualWrapper
 from tensorflow.contrib.rnn.python.ops.core_rnn_cell import RNNCell
 

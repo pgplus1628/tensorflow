@@ -35,6 +35,7 @@
 @@MultiRNNCell
 @@DropoutWrapper
 @@EmbeddingWrapper
+@@GPUEmbeddingWrapper
 @@InputProjectionWrapper
 @@OutputProjectionWrapper
 @@OutputArgMaxWrapper
