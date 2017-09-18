@@ -546,7 +546,7 @@ class OutputArgMaxWrapper(RNNCell):
                         reuse=self._reuse):
       output, res_state = self._cell(inputs, state)
       #out_symbol = math_ops.argmax(output, 1) # (pin) TODO use argmax2d
-      out_symbol = math_ops.argmax2d(output, 1) # (pin) TODO use argmax2d
+      out_symbol = math_ops.argmax2d(output) # (pin) TODO use argmax2d
       #out_symbol = math_ops.cast(out_symbol, dtype=dtypes.float32) # (pin) this is a hack
       out_symbol = array_ops.expand_dims(out_symbol, 1)
     return out_symbol, res_state
