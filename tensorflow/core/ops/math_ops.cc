@@ -1282,7 +1282,7 @@ REGISTER_OP("ArgMax2D")
     .Input("input: T")
     .Output("output: int32")
     .Attr("T: numbertype")
-    .Attr("Tidx: {int32} = DT_INT32")
+    //.Attr("Tidx: {int32} = DT_INT32")
     .SetShapeFn(ArgMax2DOpShape)
     .Doc(R"doc(
 Returns the index with the largest value across dimensions of a tensor.
