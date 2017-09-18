@@ -1280,7 +1280,7 @@ dimension: int32, 0 <= dimension < rank(input).  Describes which dimension
  */
 REGISTER_OP("ArgMax2D")
     .Input("input: T")
-    .Output("output: Tidx")
+    .Output("output: int32")
     .Attr("T: numbertype")
     .Attr("Tidx: {int32} = DT_INT32")
     .SetShapeFn(ArgMax2DOpShape)
