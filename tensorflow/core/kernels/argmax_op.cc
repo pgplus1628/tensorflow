@@ -261,7 +261,7 @@ TF_CALL_GPU_NUMBER_TYPES(DECLARE_GPU_CLASS);
 #define REGISTER_ARGMAX2D_GPU(type) \
   REGISTER_KERNEL_BUILDER(Name("ArgMax2D") \
                           .Device(DEVICE_GPU) \
-                          .TypeConstraint<type>("T"), \
+                          .TypeConstraint<type>("T") \
                           .TypeConstraint<int32>("Tidx"), \
                         ArgMax2DOp<GPUDevice, type>);
 TF_CALL_GPU_NUMBER_TYPES(REGISTER_ARGMAX2D_GPU);
