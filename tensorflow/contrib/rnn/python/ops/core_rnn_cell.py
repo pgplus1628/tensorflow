@@ -17,6 +17,8 @@
 @@EmbeddingWrapper
 @@InputProjectionWrapper
 @@OutputProjectionWrapper
+@@OutputArgMaxWrapper
+@@GPUEmbeddingWrapper
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -25,6 +27,7 @@ from __future__ import print_function
 import math
 
 from tensorflow.python.framework import ops
+from tensorflow.python.framework import dtypes #(pin)
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import embedding_ops
 from tensorflow.python.ops import init_ops
@@ -234,3 +237,132 @@ class OutputProjectionWrapper(RNNCell):
     if self._activation:
       projected = self._activation(projected)
     return projected, res_state
+
+
+class OutputArgMaxWrapper(RNNCell):
+  """Operator adding an output argmax 
+  """
+
+  def __init__(self, cell,reuse=None):
+    """Create a cell with output arg max
+
+    Args:
+      cell: an RNNCell, a argmax to output_size is added to it.
+      reuse: (optional) Python boolean describing whether to reuse variables
+        in an existing scope.  If not `True`, and the existing scope already has
+        the given variables, an error is raised.
+
+    
+      after argmax, it will return a world id.
+    Raises:
+      TypeError: if cell is not an RNNCell.
+    """
+    if not isinstance(cell, RNNCell):
+      raise TypeError("The parameter cell is not RNNCell.")
+    self._cell = cell
+    self._reuse = reuse
+
+  @property
+  def state_size(self):
+    return self._cell.state_size
+
+  @property
+  def output_size(self):
+    return 1
+
+  def zero_state(self, batch_size, dtype):
+    with ops.name_scope(type(self).__name__ + "ZeroState", values=[batch_size]):
+      return self._cell.zero_state(batch_size, dtype)
+
+  def __call__(self, inputs, state, scope=None):
+    """Run the cell and output argmax on inputs, starting from state."""
+    # Default scope: "OutputProjectionWrapper"
+    with _checked_scope(self, scope or "output_argmax_wrapper",
+                        reuse=self._reuse):
+      output, res_state = self._cell(inputs, state)
+      #out_symbol = math_ops.argmax(output, 1) # (pin) TODO use argmax2d
+      out_symbol = math_ops.argmax2d(output) # (pin) TODO use argmax2d
+      #out_symbol = math_ops.cast(out_symbol, dtype=dtypes.float32) # (pin) this is a hack
+      out_symbol = array_ops.expand_dims(out_symbol, 1)
+    return out_symbol, res_state
+
+
+class GPUEmbeddingWrapper(RNNCell):
+  """Operator adding input embedding to the given cell.
+  On GPU. (pin)
+
+  Note: in many cases it may be more efficient to not use this wrapper,
+  but instead concatenate the whole sequence of your inputs in time,
+  do the embedding on this batch-concatenated sequence, then split it and
+  feed into your RNN.
+  """
+
+  def __init__(self, cell, embedding_classes, embedding_size, initializer=None,
+               reuse=None):
+    """Create a cell with an added input embedding.
+
+    Args:
+      cell: an RNNCell, an embedding will be put before its inputs.
+      embedding_classes: integer, how many symbols will be embedded.
+      embedding_size: integer, the size of the vectors we embed into.
+      initializer: an initializer to use when creating the embedding;
+        if None, the initializer from variable scope or a default one is used.
+      reuse: (optional) Python boolean describing whether to reuse variables
+        in an existing scope.  If not `True`, and the existing scope already has
+        the given variables, an error is raised.
+
+    Raises:
+      TypeError: if cell is not an RNNCell.
+      ValueError: if embedding_classes is not positive.
+    """
+    if not isinstance(cell, RNNCell):
+      raise TypeError("The parameter cell is not RNNCell.")
+    if embedding_classes <= 0 or embedding_size <= 0:
+      raise ValueError("Both embedding_classes and embedding_size must be > 0: "
+                       "%d, %d." % (embedding_classes, embedding_size))
+    self._cell = cell
+    self._embedding_classes = embedding_classes
+    self._embedding_size = embedding_size
+    self._initializer = initializer
+    self._reuse = reuse
+
+  @property
+  def state_size(self):
+    return self._cell.state_size
+
+  @property
+  def output_size(self):
+    return self._cell.output_size
+
+  def zero_state(self, batch_size, dtype):
+    with ops.name_scope(type(self).__name__ + "ZeroState", values=[batch_size]):
+      return self._cell.zero_state(batch_size, dtype)
+
+  def __call__(self, inputs, state, scope=None):
+    """Run the cell on embedded inputs."""
+    with _checked_scope(self, scope or "embedding_wrapper", reuse=self._reuse):
+      #with ops.device("/cpu:0"):
+      if self._initializer:
+        initializer = self._initializer
+      elif vs.get_variable_scope().initializer:
+        initializer = vs.get_variable_scope().initializer
+      else:
+        # Default initializer for embeddings should have variance=1.
+        sqrt3 = math.sqrt(3)  # Uniform(-sqrt(3), sqrt(3)) has variance=1.
+        initializer = init_ops.random_uniform_initializer(-sqrt3, sqrt3)
+
+      if type(state) is tuple:
+        data_type = state[0].dtype
+      else:
+        data_type = state.dtype
+
+      embedding = vs.get_variable(
+          "embedding", [self._embedding_classes, self._embedding_size],
+          initializer=initializer,
+          dtype=data_type)
+      embedded = embedding_ops.embedding_lookup(
+          embedding, array_ops.reshape(inputs, [-1]))
+    return self._cell(embedded, state)
+
+
+

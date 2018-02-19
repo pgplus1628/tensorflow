@@ -33,6 +33,9 @@ See @{$python/contrib.rnn} guide.
 @@InputProjectionWrapper
 @@OutputProjectionWrapper
 
+@@GPUEmbeddingWrapper
+@@OutputArgMaxWrapper
+
 <!--Created in contrib, eventual plans to move to core.-->
 @@LayerNormBasicLSTMCell
 @@LSTMBlockWrapper
@@ -78,6 +81,9 @@ from __future__ import print_function
 from tensorflow.contrib.rnn.python.ops.core_rnn_cell import EmbeddingWrapper
 from tensorflow.contrib.rnn.python.ops.core_rnn_cell import InputProjectionWrapper
 from tensorflow.contrib.rnn.python.ops.core_rnn_cell import OutputProjectionWrapper
+from tensorflow.contrib.rnn.python.ops.core_rnn_cell import GPUEmbeddingWrapper
+from tensorflow.contrib.rnn.python.ops.core_rnn_cell import OutputArgMaxWrapper
+
 
 from tensorflow.contrib.rnn.python.ops.fused_rnn_cell import *
 from tensorflow.contrib.rnn.python.ops.gru_ops import *

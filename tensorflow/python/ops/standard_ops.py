@@ -130,6 +130,7 @@ _allowed_symbols_math_ops = [
 
     # Legacy: will be removed.
     "arg_max",
+    "arg_max2d",
     "arg_min",
     "lin_space",
     "sparse_matmul",  # Use tf.matmul.

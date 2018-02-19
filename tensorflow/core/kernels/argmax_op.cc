@@ -24,6 +24,7 @@ limitations under the License.
 #include "tensorflow/core/kernels/argmax_op.h"
 
 #include <memory>
+#include <limits>
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 #include "tensorflow/core/framework/op_kernel.h"
 #include "tensorflow/core/framework/register_types.h"
@@ -118,6 +119,81 @@ class ArgMinOp
       : ArgOp<Device, T, Tout, functor::ArgMin<Device, T, Tout> >(context) {}
 };
 
+
+namespace functor { 
+/*
+ * (pin) ArgMax2DOp
+ */
+template <typename T>
+struct ArgMax2DFunctor<CPUDevice, T>{ 
+  void operator() (const CPUDevice& d, 
+                   const T* input, 
+                   int* output,
+                   T lowest,
+                   int bsize,
+                   int hsize) { 
+    LOG(FATAL) << "Not Implemented.";
+  }
+};
+
+} // namespace functor
+
+template <typename Device, typename T>
+class ArgMax2DOp : public OpKernel {
+ public : 
+  explicit ArgMax2DOp(OpKernelConstruction* context) : OpKernel(context) { } 
+
+  void Compute(OpKernelContext* context) override { 
+    const Tensor& input = context->input(0);
+    const int input_dims = input.dims();
+    OP_REQUIRES(context, input_dims == 2,
+                errors::InvalidArgument("Expected dimension 2, but got ", input_dims));
+    int axis = 1;
+    OP_REQUIRES(
+        context, input.dim_size(axis) > 0,
+        errors::InvalidArgument("Reduction axis ", axis, " is empty in shape ",
+                                input.shape().DebugString()));
+    TensorShape output_shape;
+    const TensorShape& input_shape = input.shape();
+    output_shape.AddDim(input_shape.dim_size(0)); // assume first dim is batch dim.
+    Tensor* output = nullptr;
+    OP_REQUIRES_OK(context, context->allocate_output(0, output_shape, &output));
+
+    /*
+    if (std::is_same<Device, GPUDevice>::value) { 
+      LOG(INFO) << " FUCK It IS GPU !!! FUCK YOU .";
+    } else if (std::is_same<Device, CPUDevice>::value) { 
+      LOG(INFO) << " FUCK !!!!!!!!!!!! CPU .";
+    } else { 
+      LOG(FATAL) << " FUCK NON!";
+    }
+    */
+
+    // compute
+    int bsize = input_shape.dim_size(0);
+    int hsize = input_shape.dim_size(1);
+    functor::ArgMax2DFunctor<Device, T>()(
+      context->eigen_device<Device>(),
+      input.flat<T>().data(),
+      output->flat<int>().data(),
+      std::numeric_limits<T>::min(),
+      bsize,
+      hsize);
+  }
+};
+
+#define REGISTER_ARGMAX2D_CPU(type) \
+  REGISTER_KERNEL_BUILDER(Name("ArgMax2D") \
+                          .Device(DEVICE_CPU) \
+                          .TypeConstraint<type>("T"), \
+                        ArgMax2DOp<CPUDevice, type>);
+
+TF_CALL_REAL_NUMBER_TYPES(REGISTER_ARGMAX2D_CPU);
+
+
+
+
+
 #define REGISTER_ARGMAX(type)                                       \
   REGISTER_KERNEL_BUILDER(Name("ArgMax")                            \
                               .Device(DEVICE_CPU)                   \
@@ -185,7 +261,35 @@ TF_CALL_GPU_NUMBER_TYPES(DECLARE_GPU_CLASS);
 #undef DECLARE_GPU_SPECS
 #undef DECLARE_GPU_CLASS
 
+
+// (pin)  forward declare gpu functor
+#define DECLARE_ARGMAX2D_FUNCTOR_GPU_SPEC(T)        \
+  template <>                                       \
+  void ArgMax2DFunctor<GPUDevice, T>::operator()    \
+    (const GPUDevice &d, const T* in, int* out, T lowest, int bsize, int hsize) ;
+
+  TF_CALL_GPU_NUMBER_TYPES(DECLARE_ARGMAX2D_FUNCTOR_GPU_SPEC);
+
+  #define DECLARE_ARGMAX2D_FUNCTOR_GPU_CLASS(T) \
+    extern template struct ArgMax2DFunctor<GPUDevice, T>;
+  
+    TF_CALL_GPU_NUMBER_TYPES(DECLARE_ARGMAX2D_FUNCTOR_GPU_CLASS);
+  #undef DECLARE_ARGMAX2D_FUNCTOR_GPU_SPEC
+#undef DECLARE_ARGMAX2D_FUNCTOR_GPU_CLASS
+
+
 }  // namespace functor
+
+// Registration of the GPU implementations.
+// (pin) 
+#define REGISTER_ARGMAX2D_GPU(type) \
+  REGISTER_KERNEL_BUILDER(Name("ArgMax2D") \
+                          .Device(DEVICE_GPU) \
+                          .TypeConstraint<type>("T"), \
+                        ArgMax2DOp<GPUDevice, type>);
+TF_CALL_GPU_NUMBER_TYPES(REGISTER_ARGMAX2D_GPU);
+#undef REGISTER_ARGMAX2D_GPU
+
 
 // Registration of the GPU implementations.
 #define REGISTER_ARGMAX_GPU(type)                                   \

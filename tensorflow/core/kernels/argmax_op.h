@@ -43,6 +43,19 @@ struct ArgMax {
 #undef DECLARE_COMPUTE_SPEC
 };
 
+// (pin)
+template <typename Device, typename T>
+struct ArgMax2DFunctor { 
+  void operator() (const Device& d, 
+                   const T* input,
+                   int* output,
+                   T lowest,
+                   int bsize,
+                   int hsize);
+};
+
+
+
 template <typename Device, typename T, typename Tout>
 struct ArgMin {
 #define DECLARE_COMPUTE_SPEC(Dims)                                             \
