@@ -7,7 +7,7 @@ import pprint as pp
 
 print(tf.__version__)
 
-with tf.device('/gpu:1') :
+with tf.device('/gpu:0') :
     a = tf.placeholder(tf.float32, [2,3])
     r = tf.argmax2d(a)
 
